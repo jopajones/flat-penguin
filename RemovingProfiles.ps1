@@ -7,42 +7,6 @@
 #>
 
 
-
-
-# exclude service and default accounts from profile removals
-# return $FALSE if indicated account is ineligible for removal
-function Exclude-SvcAcct {
-    Param($AcctSID)
-
-    # exclude Local Administrator account
-    if ( $AcctSID -like "S-1-5-21*500" ) {
-        Write-Host "`nExcluding user profile $($_.LocalPath): Local Administrator"
-        return $True
-    }
-
-    # exclude Network Service account
-    if ( $AcctSID -eq "S-1-5-20" ) {
-        Write-Host "`nExcluding user profile $($_.LocalPath): Network Service Account"
-        return $True
-    }
-
-    # exclude Local Service account
-    if ( $AcctSID -eq "S-1-5-19" ) {
-        Write-Host "`nExcluding user profile $($_.LocalPath): Local Service Account"
-        return $True
-    }
-
-    # exclude Local System account
-    if ( $AcctSID -eq "S-1-5-18" ) {
-        Write-Host "`nExcluding user profile $($_.LocalPath): Local System Account"
-        return $True
-    }
-
-
-    return $False
-}
-
-
 # display main menu and prompt for user selection
 function Get-MainMenu {
 
@@ -242,10 +206,10 @@ function Remove-UserByDate {
         # verify date range
         if ( ($_.LastUseTime -lt $EndDate) -and ($_.LastUseTime -gt $StartDate) ) {
 
-            # remove account if not default exclusion
-             if (! (Exclude-SvcAcct -AcctSID $($_.SID)) ) {
+            # remove account if not owned by system service
+             if ($_.Special -ne $True ) {
                 Write-Host "`n Deleting profile $($_.LocalPath) with SID $($_.SID)"
-                Remove-CimInstance $_ -WhatIf
+                Remove-CimInstance $_ 
              }
 
         }
@@ -290,6 +254,5 @@ while (!($QuitScript)) {
 
 }
 
-# Get-CimInstance -ClassName Win32_UserProfile | Where-object { ($_.LastUseTime.((Get-Date 2019-06-06)) }
 
 Exit
